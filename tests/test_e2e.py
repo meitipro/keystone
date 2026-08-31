@@ -37,14 +37,14 @@ CHANGELOG = "Publish the changelog entry describing the new schema."
 def pair(forward, reverse, because="one cannot start until the other is done"):
     """Mock both presentation orders of one pair.
 
-    The two prompts differ only in which step is called FIRST STEP, so the mock
-    keys on the text that sits under that heading. Writing them as two separate
+    The two prompts differ only in which step sits in the first_step block, so the
+    mock keys on the text that opens it. Writing them as two separate
     entries is the point: a test that fed both passes the same answer would
     never exercise the mirror, and the mirror is the whole mechanism.
     """
     return {
-        "FIRST STEP:\n" + forward[0]: {"order": forward[1], "because": because},
-        "FIRST STEP:\n" + reverse[0]: {"order": reverse[1], "because": because},
+        "<first_step>\n" + forward[0]: {"order": forward[1], "because": because},
+        "<first_step>\n" + reverse[0]: {"order": reverse[1], "because": because},
     }
 
 
@@ -449,14 +449,18 @@ class TestKeystone:
         assert c.may_add(0, self.AGENT) is True
         assert c.may_add(0, self.STRANGER) is False
         assert c.may_add(0, "not-an-address") is False
-        for who in (self.REGISTRAR, self.AGENT, self.STRANGER):
+        # A distinct text per sender. Reusing one would hit the duplicate rule
+        # on the second caller and mask the authority result being checked, so
+        # the test would pass for the wrong reason.
+        for i, who in enumerate((self.REGISTRAR, self.AGENT, self.STRANGER)):
+            text = "Step number %d, which does a distinct thing." % i
             S.set_sender(who)
             try:
                 if c.may_add(0, who):
-                    S.call(c, "add", 0, MIGRATE)
+                    S.call(c, "add", 0, text)
                 else:
-                    with pytest.raises(S.UserError):
-                        S.call(c, "add", 0, MIGRATE)
+                    with pytest.raises(S.UserError, match="registrar or an authorised"):
+                        S.call(c, "add", 0, text)
             finally:
                 S.set_sender(self.REGISTRAR)
 
@@ -587,6 +591,24 @@ class TestKeystone:
         with pytest.raises(S.UserError):
             S.call(c, "plan", title)
         assert c.count() == 0
+
+    def test_two_identical_steps_are_refused(self):
+        """They make the two presentation orders the SAME prompt, so the mirror
+        compares one answer against itself and settle() can only ever return
+        `neither`. The pair becomes permanently undecidable and the mirror --
+        the whole reason the block runs twice -- silently does nothing."""
+        c = self.deploy(FREEZE)
+        with pytest.raises(S.UserError, match="already in the plan"):
+            S.call(c, "add", 0, FREEZE)
+        assert c.step_count(0) == 1
+
+    def test_the_same_text_in_a_different_plan_is_fine(self):
+        """The rule is about one plan's own steps. Two plans may legitimately
+        share a step, and they are never compared against each other."""
+        c = self.deploy(FREEZE)
+        S.call(c, "plan", "Another plan")
+        S.call(c, "add", 1, FREEZE)
+        assert c.step_count(0) == 1 and c.step_count(1) == 1
 
     def test_the_step_cap_is_enforced(self):
         c = self.deploy()

@@ -175,6 +175,11 @@ MUTATIONS = [
         "            if True:\n                out.append((i, str(s.text)))",
     ),
     (
+        "two identical steps allowed, so a pair can never be mirrored",
+        "        for _g, existing in self._local_steps(plan_id):",
+        "        for _g, existing in []:",
+    ),
+    (
         "the step cap removed",
         "        if int(p.n_steps) >= MAX_STEPS:",
         "        if False:",
@@ -283,6 +288,33 @@ MUTATIONS = [
         "",
     ),
 
+    # -- the prompt boundary. Tagging untrusted text is not a fence unless
+    # -- the characters that close a tag are neutralised too.
+    (
+        "the prompt fence removed, so a caller can forge a block",
+        '    return str(raw).replace("<", "(").replace(">", ")")',
+        "    return str(raw)",
+    ),
+    (
+        "the fence deletes instead of replacing",
+        '    return str(raw).replace("<", "(").replace(">", ")")',
+        '    return str(raw).replace("<", "").replace(">", "")',
+    ),
+    (
+        "only the opening bracket fenced",
+        '    return str(raw).replace("<", "(").replace(">", ")")',
+        '    return str(raw).replace("<", "(")',
+    ),
+    (
+        "the second step reaches the model unfenced",
+        "{fence(second_text)}",
+        "{second_text}",
+    ),
+    (
+        "the plan title reaches the model unfenced",
+        "{fence(title)}",
+        "{title}",
+    ),
     # -- shape rules the runtime enforces and a green suite cannot see
     (
         "a nested mapping returned from the block",

@@ -216,7 +216,7 @@ and end-to-end suites run with no Studio and no network. The integration suite
 skips cleanly unless `genlayer-test` is installed.
 
 <!-- measured:tests -->
-`pytest tests/ -q` reports **148 passed, 1 skipped**, and every one of the **47** mutations below is caught.
+`pytest tests/ -q` reports **159 passed, 1 skipped**, and every one of the **53** mutations below is caught.
 <!-- /measured:tests -->
 
 ### The tests have teeth
@@ -253,6 +253,7 @@ table if anything escapes.
 | a step allowed to depend on itself | `test_a_step_cannot_come_before_itself` |
 | step bounds not checked, so a pair can name a step in another plan | `test_ordering_a_step_that_is_not_in_the_plan_is_refused` |
 | the plan filter dropped, so every plan shares one step list | `test_steps_are_local_to_their_plan` |
+| two identical steps allowed, so a pair can never be mirrored | `test_two_identical_steps_are_refused` |
 | the step cap removed | `test_the_step_cap_is_enforced` |
 | a sealed plan still accepts steps | `test_a_sealed_plan_takes_no_new_steps` |
 | add left unauthenticated, so anyone may write into any plan | `test_a_stranger_cannot_add_steps_to_someone_elses_plan` |
@@ -270,6 +271,11 @@ table if anything escapes.
 | negative plan ids allowed through to Python list indexing | `test_a_read_with_a_negative_id_does_not_return_the_last_row` |
 | the reason sanitiser disabled | `test_the_reason_is_sanitised_on_the_way_in` |
 | control characters left in reasons | `test_control_characters_become_spaces` |
+| the prompt fence removed, so a caller can forge a block | `test_the_plan_title_is_fenced_too` |
+| the fence deletes instead of replacing | `test_fence_replaces_rather_than_deletes` |
+| only the opening bracket fenced | `test_fence_replaces_rather_than_deletes` |
+| the second step reaches the model unfenced | `test_every_lifted_function_is_identical_to_the_contract` |
+| the plan title reaches the model unfenced | `test_every_lifted_function_is_identical_to_the_contract` |
 | a nested mapping returned from the block | `test_a_dependency_that_survives_both_orders_is_stored` |
 | a bool returned from the block | `test_a_dependency_that_survives_both_orders_is_stored` |
 | a collection nested back into a storage dataclass | `TypeError at import` |
@@ -293,6 +299,10 @@ be exercised looks identical to one that is not there.
 - **Exact equality between nodes.** No tolerance, in either direction.
 - **Agreement is not consistency.** Every edge in a refused cycle was agreed by
   the network. Only the contract holds enough state to tell the difference.
+- **Untrusted text is fenced at the prompt boundary.** Tagging it and telling the
+  model it is data is not a fence on its own: `fence()` neutralises the
+  characters that can close a tag, so a caller cannot forge a block. Replace,
+  never delete, and at the boundary only — storage keeps what was written.
 - **A refusal is kept.** A cycle found once stays findable; deleting it would
   throw away the finding.
 - **Every write is bound to an address**, and a static test asserts it for the
