@@ -190,6 +190,13 @@ MUTATIONS = [
         "",
     ),
 
+    # -- recourse. A refusal has to leave the plan somewhere to go.
+    (
+        "a cycle refusal seals the plan, so no further work is possible",
+        "                outcome, live = CYCLE, False",
+        "                outcome, live = CYCLE, False\n                p.sealed = True",
+    ),
+
     # -- authority
     (
         "add left unauthenticated, so anyone may write into any plan",

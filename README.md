@@ -216,7 +216,7 @@ and end-to-end suites run with no Studio and no network. The integration suite
 skips cleanly unless `genlayer-test` is installed.
 
 <!-- measured:tests -->
-`pytest tests/ -q` reports **159 passed, 1 skipped**, and every one of the **53** mutations below is caught.
+`pytest tests/ -q` reports **162 passed, 1 skipped**, and every one of the **54** mutations below is caught.
 <!-- /measured:tests -->
 
 ### The tests have teeth
@@ -252,10 +252,11 @@ table if anything escapes.
 | a pair only counts as decided in the order it was first asked | `test_the_same_pair_the_other_way_round_is_the_same_pair` |
 | a step allowed to depend on itself | `test_a_step_cannot_come_before_itself` |
 | step bounds not checked, so a pair can name a step in another plan | `test_ordering_a_step_that_is_not_in_the_plan_is_refused` |
-| the plan filter dropped, so every plan shares one step list | `test_steps_are_local_to_their_plan` |
+| the plan filter dropped, so every plan shares one step list | `test_the_owner_can_carry_the_work_into_a_fresh_plan` |
 | two identical steps allowed, so a pair can never be mirrored | `test_two_identical_steps_are_refused` |
 | the step cap removed | `test_the_step_cap_is_enforced` |
 | a sealed plan still accepts steps | `test_a_sealed_plan_takes_no_new_steps` |
+| a cycle refusal seals the plan, so no further work is possible | `test_a_plan_is_still_usable_after_a_cycle_refusal` |
 | add left unauthenticated, so anyone may write into any plan | `test_a_stranger_cannot_add_steps_to_someone_elses_plan` |
 | the submitting address not recorded on the step | `test_a_delegate_may_add_and_the_record_names_them` |
 | a revoked delegate still counted as authorised | `test_a_revoked_delegate_cannot_add` |

@@ -337,6 +337,70 @@ class TestKeystone:
             S.call(c, "order", 0, 0, 1)
         assert S.validator_prompt_calls() == 2
 
+    # -- recourse -----------------------------------------------------------
+    #
+    # A refusal has to leave the plan somewhere to go. A contract that can reach
+    # a state where the owner has no next move is not a primitive, it is a trap
+    # -- and the paths that matter are the ones nobody thought to test, because
+    # they work until an edit quietly closes them and the suite stays green.
+
+    def test_a_plan_is_still_usable_after_a_cycle_refusal(self):
+        """The cycle is a finding about the plan, not a wall in front of it.
+        The two edges that were agreed still hold, the layering still answers,
+        and everything the owner has not yet decided is still decidable."""
+        c = self.deploy(FREEZE, MIGRATE, REPLICA)
+        self.mocks(stable(FREEZE, MIGRATE, "a"))
+        S.call(c, "order", 0, 0, 1)
+        self.mocks(stable(MIGRATE, REPLICA, "a"))
+        S.call(c, "order", 0, 1, 2)
+        self.mocks(stable(REPLICA, FREEZE, "a"))
+        S.call(c, "order", 0, 2, 0)
+        assert c.overview(0)["cycles_refused"] == 1
+
+        # the ordering the network DID agree to is untouched
+        assert c.sequence(0) == "0|1|2"
+        assert c.overview(0)["dependencies"] == 2
+
+        # and the plan keeps taking work
+        S.call(c, "add", 0, CHANGELOG)
+        self.mocks(stable(FREEZE, CHANGELOG, "a"))
+        S.call(c, "order", 0, 0, 3)
+        assert c.sequence(0) == "0|1,3|2"
+
+    def test_a_refused_pair_stays_refused_and_that_is_the_point(self):
+        """The other half of the recourse rule. Somewhere to go must not mean
+        asking the same question again until the answer suits: a caller who
+        could re-ask would make the graph a matter of who asked last."""
+        c = self.deploy(FREEZE, MIGRATE, REPLICA)
+        self.mocks(stable(FREEZE, MIGRATE, "a"))
+        S.call(c, "order", 0, 0, 1)
+        self.mocks(stable(MIGRATE, REPLICA, "a"))
+        S.call(c, "order", 0, 1, 2)
+        self.mocks(stable(REPLICA, FREEZE, "a"))
+        S.call(c, "order", 0, 2, 0)
+        for a, b in ((2, 0), (0, 2)):
+            self.mocks(stable(REPLICA, FREEZE, "neither"))
+            with pytest.raises(S.UserError, match="already been decided"):
+                S.call(c, "order", 0, a, b)
+
+    def test_the_owner_can_carry_the_work_into_a_fresh_plan(self):
+        """The route out of a plan whose recorded edges are wrong. Steps are
+        never edited or removed -- the record is a history -- so the recourse
+        is a new plan, and it must be genuinely unencumbered by the old one."""
+        c = self.deploy(FREEZE, MIGRATE)
+        self.mocks(stable(FREEZE, MIGRATE, "a"))
+        S.call(c, "order", 0, 0, 1)
+
+        S.call(c, "plan", "Database cutover, second attempt")
+        for t in (MIGRATE, FREEZE):
+            S.call(c, "add", 1, t)
+        assert c.overview(1)["pairs_decided"] == 0
+        self.mocks(stable(MIGRATE, FREEZE, "b"))
+        S.call(c, "order", 1, 0, 1)
+        assert c.sequence(1) == "1|0"
+        # the first plan is untouched by any of it
+        assert c.sequence(0) == "0|1"
+
     # -- authority ----------------------------------------------------------
 
     def test_a_stranger_cannot_add_steps_to_someone_elses_plan(self):

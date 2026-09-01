@@ -213,6 +213,27 @@ nested collection — is refused by the runtime. A deployment expecting very man
 records should use one contract per tenant rather than one contract for all of
 them.
 
+## A cycle refusal leaves the plan somewhere to go
+
+Added after a sibling project was rejected for the opposite: a contract whose
+appeal path existed in the source and was unreachable on every round anybody
+actually ran.
+
+A `cycle` is a finding about the plan, not a wall in front of it. After one:
+
+- the edges the network **did** agree to still hold, and `sequence()` still
+  answers from them
+- the plan still takes steps, and every pair not yet decided is still decidable
+- the refused pair stays refused, because somewhere to go must not mean asking
+  the same question until the answer suits
+- a plan whose recorded edges are wrong is superseded by a **new plan**, which
+  starts genuinely unencumbered — steps are never edited or removed, because the
+  record is a history
+
+Tested as a journey rather than as a single call, and a mutation that seals the
+plan on a cycle is caught. A path nobody exercises is a path an edit can shut
+with the suite still green.
+
 ## Why the tests are built the way they are
 
 ### The simulator gives each node its own world
