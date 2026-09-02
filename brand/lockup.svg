@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 490 100" width="490" height="100" role="img" aria-label="keystone">
+
+  <rect width="100" height="100" rx="18" fill="#0C0D10"/>
+  <path d="M36 28 L64 28 L74 60 L26 60 Z" fill="none" stroke="#3DBFD6"
+        stroke-width="8" stroke-linejoin="round"/>
+  <line x1="24" y1="74" x2="76" y2="74" stroke="#E8E6E1" stroke-width="4"
+        stroke-linecap="round" opacity="0.85"/>
+
+  <text x="124" y="64" font-family="Inter, Helvetica Neue, Arial, sans-serif"
+        font-size="42" font-weight="700" letter-spacing="-1.4" fill="#E8E6E1">keystone</text>
+</svg>
