@@ -215,8 +215,18 @@ pytest tests/ -q
 ```
 
 Nothing else is needed. `tests/glsim.py` is a small GenVM stand-in, so the unit
-and end-to-end suites run with no Studio and no network. The integration suite
-skips cleanly unless `genlayer-test` is installed.
+and end-to-end suites run with no Studio and no network.
+
+The integration suite is **opt in**, and deliberately so. It skips when
+`genlayer-test` is absent, and it also skips when `genlayer-test` is present
+without a Studio to talk to — otherwise anybody who reviews GenLayer contracts,
+and therefore has the plugin installed, would see a wall of connection errors on
+a repository that promises an offline run. To run it against a live Studio:
+
+```bash
+pip install genlayer-test
+GENLAYER_STUDIO=1 gltest --network studionet tests/test_integration.py
+```
 
 <!-- measured:tests -->
 `pytest tests/ -q` reports **162 passed, 1 skipped**, and every one of the **54** mutations below is caught.

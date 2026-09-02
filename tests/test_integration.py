@@ -1,7 +1,12 @@
 """Integration tests, run against GenLayer Studio with gltest.
 
     pip install genlayer-test
-    gltest --network studionet tests/test_integration.py
+    pip install genlayer-test
+    GENLAYER_STUDIO=1 gltest --network studionet tests/test_integration.py
+
+They are opt in: without GENLAYER_STUDIO set they skip, so that
+`pytest tests/ -q` stays clean on a machine that has genlayer-test
+installed but no Studio to talk to.
 
 These are slower than the other two suites and they prove something different:
 that the contract deploys, that storage round-trips, that the deterministic
@@ -14,6 +19,8 @@ sealing gates refuse what they should. The ordering path costs two prompts per
 pair and belongs in a manual Studio run.
 """
 
+import os
+
 import pytest
 
 # gltest is only needed for this file. Skip cleanly when it is absent so that
@@ -22,10 +29,35 @@ import pytest
 gltest = pytest.importorskip(
     "gltest",
     reason="integration tests need genlayer-test and a running Studio: "
-           "pip install genlayer-test, then gltest --network studionet",
+           "pip install genlayer-test, then GENLAYER_STUDIO=1 gltest",
 )
 from gltest import get_contract_factory, get_accounts        # noqa: E402
 from gltest.assertions import tx_execution_succeeded         # noqa: E402
+
+
+# The second half of the same guard, and it is the half that bites.
+#
+# importorskip above covers "genlayer-test is not installed". It does NOT cover
+# "genlayer-test IS installed and there is no Studio to talk to", which is the
+# common case for anybody who reviews GenLayer contracts: the plugin loads,
+# collects this file, and every test in it fails on a connection error rather
+# than skipping. `pytest tests/ -q` then reports a wall of ERRORs on a
+# repository whose README promises a clean offline run, and the reader cannot
+# tell an unreachable network from a broken contract.
+#
+# Detecting it does not work. A probe was tried first and thrown away: the
+# transport failures here are INTERMITTENT rather than a clean threshold, so
+# the probe passes and the deploy that follows it still dies. Something that
+# answers correctly only most of the time is worse than no gate at all.
+#
+# So the gate is explicit. These tests need a live Studio, and you say so.
+if not os.environ.get("GENLAYER_STUDIO"):
+    pytest.skip(
+        "integration tests run against a live GenLayer Studio and are opt in: "
+        "set GENLAYER_STUDIO=1 to enable them. Everything else runs offline "
+        "with pytest tests/ -q",
+        allow_module_level=True,
+    )
 
 
 TITLE = "Database cutover, March"
