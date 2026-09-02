@@ -8,6 +8,7 @@ contract owns the graph and does the hard part with no model at all.
 - **Contract:** [`contracts/keystone.py`](contracts/keystone.py)
 - **Tests:** `pip install pytest && pytest tests/ -q` — nothing else to install
 - **Deployed:** `{address}` on studionet ([explorer](https://explorer-studio.genlayer.com/address/{address}))
+- **Deploying it yourself:** [DEPLOY.md](DEPLOY.md) — the contract, the demo, and the check to run before submitting
 - **Verify a deployment:** `python scripts/verify_deployment.py 0x…` — diffs the
   on-chain source against this file
 - **Specification:** [CONTRACTS.md](CONTRACTS.md)
