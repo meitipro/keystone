@@ -100,9 +100,24 @@ def main():
     print(f"  repo file    {SOURCE.relative_to(ROOT)}  ({len(local)} chars)")
     print(f"  on chain     {len(remote)} chars")
 
-    # Line endings are not part of what runs, and git rewrites them on Windows.
-    same = local.replace("\r\n", "\n") == remote.replace("\r\n", "\n")
+    # Two kinds of difference, and only one of them matters.
+    #
+    # Pasting a file into a web editor rewrites LF to CRLF and usually eats the
+    # final newline. Neither changes a byte of what RUNS, and a checker that
+    # reports them as a mismatch is a checker somebody learns to ignore, which
+    # is exactly when it stops catching the difference that counts.
+    #
+    # So normalise the line endings and the trailing newline, then compare what
+    # is left. Anything surviving that is a real difference in the code.
+    def canonical(text):
+        return text.replace("\r\n", "\n").rstrip("\n")
+
+    same = canonical(local) == canonical(remote)
+    cosmetic = same and local != remote
     print(f"  identical    {'yes' if same else 'NO'}")
+    if cosmetic:
+        print("               line endings and the trailing newline differ, "
+              "which nothing runs")
 
     ok_lint, out = lint(remote)
     print(f"  lint         {'passed' if ok_lint else 'FAILED'}")
@@ -113,8 +128,8 @@ def main():
     if not same:
         print("\n  The deployed source is not this file. First differences:\n")
         diff = difflib.unified_diff(
-            remote.replace("\r\n", "\n").splitlines(),
-            local.replace("\r\n", "\n").splitlines(),
+            canonical(remote).splitlines(),
+            canonical(local).splitlines(),
             fromfile="deployed", tofile="repository", lineterm="", n=1,
         )
         for i, line in enumerate(diff):

@@ -52,17 +52,21 @@ Eleven writes.
 
 > ### ⛔ Stop here. This is the highest-risk step in all three contracts.
 >
-> Read `sequence(0)`.
+> Read `overview(0)` and look at **`dependencies`**.
 >
-> - **`0|1|2,3`** or anything with a `|` in it — edges were stored. Carry on to
->   step 9.
-> - **`0,1,2,3`** — **stop, and do not run step 9.** Nothing was stored: every
->   pair came back `neither`. Send me `edges_of(0)` and I will fix the prompt or
->   the demo data before you go further.
+> - **`dependencies` is `2`** — steps 6 and 7 both stored a live edge, so the
+>   chain 0 → 1 → 2 exists. Carry on to step 9.
+> - **anything less** — **stop, and do not run step 9.** Send me `edges_of(0)`.
 >
-> Step 9 only produces a cycle if steps 6 and 7 actually stored edges. Run
-> against an empty graph it stores an ordinary dependency, and the whole point
-> of the demo disappears.
+> Step 9 closes a loop **only if that chain exists**. Without it there is nothing
+> to close: the call stores an ordinary edge, the refusal never happens, and the
+> one thing this contract is for is missing from the page.
+>
+> Count the dependencies, not the pipes. An earlier version of this page said to
+> look for a `|` in `sequence(0)`, and that is not the same test — a single edge
+> anywhere produces a `|` while leaving the chain unformed. That mistake was made
+> on the first run of this demo: `sequence(0)` read `0,1,3|2`, which passed the
+> `|` test, and the cycle step then stored a plain dependency instead.
 
 ### The refusal
 
