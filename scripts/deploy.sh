@@ -46,9 +46,16 @@ gold "deployed at $ADDR"
 # to reason about, so it answers differently on every run, the two presentation
 # orders never mirror, and every pair settles to `neither`. A contract that
 # refuses everything demonstrates nothing.
+# The step texts state their dependency in the SAME words the prompt asks in:
+# "does one of these have to be finished before the other can start?" Two
+# earlier drafts of this demo did not, and every pair came back `unrelated` --
+# once on a pair whose own stored reason named the dependency out loud. The
+# contract was right both times. It is built to answer `neither` unless one step
+# genuinely cannot begin until the other is done, so a demo has to supply a
+# dependency that is unambiguous rather than merely implied.
 FREEZE="Freeze writes to the primary database and drain the outstanding queue."
-MIGRATE="Run the schema migration against the primary database."
-REPLICA="Repoint the read replicas at the migrated primary and resume traffic."
+MIGRATE="Run the schema migration against the primary database. This cannot start until writes are frozen and the queue is drained."
+REPLICA="Repoint the read replicas at the migrated primary. This cannot start until the schema migration is finished."
 CHANGELOG="Publish the changelog entry describing the new schema to customers."
 
 # --args is variadic. A JSON array is ONE argument, not the argument list, so
@@ -74,12 +81,37 @@ genlayer write "$ADDR" order --args 0 0 3
 
 dim "sequence()  the layering derived from the graph, with no model involved"
 genlayer call "$ADDR" sequence --args 0
+genlayer call "$ADDR" overview --args 0
 
-# --- and now the refusal path, on chain -----------------------------------
-dim "order(2,0)  replicas before freeze -- this would close a loop"
-genlayer write "$ADDR" order --args 0 2 0
-genlayer call  "$ADDR" edges_of --args 0
-genlayer call  "$ADDR" overview --args 0
+# --- the refusal, on a plan built to need one -----------------------------
+#
+# The cycle cannot be demonstrated on the plan above: it has a real ordering, so
+# no honest answer closes a loop. It needs a plan where each step waits on the
+# next one's output, which is the ordinary organisational deadlock -- every pair
+# individually correct, the three together not an ordering.
+SPEC="Write the API specification. This cannot start until the data model is finished."
+MODEL="Build the data model. This cannot start until the database schema is finished."
+SCHEMA="Design the database schema. This cannot start until the API specification is finished."
+
+dim "plan()      a second plan, built to contain a real circular dependency"
+genlayer write "$ADDR" plan --args "Platform rebuild, the circular dependency" >/dev/null
+genlayer write "$ADDR" add --args 1 "$SPEC"   >/dev/null
+genlayer write "$ADDR" add --args 1 "$MODEL"  >/dev/null
+genlayer write "$ADDR" add --args 1 "$SCHEMA" >/dev/null
+
+dim "order(0,1)  the spec waits on the data model"
+genlayer write "$ADDR" order --args 1 0 1
+
+dim "order(1,2)  the data model waits on the schema"
+genlayer write "$ADDR" order --args 1 1 2
+
+dim "sequence()  expect 2|1|0 -- the chain, before anything closes it"
+genlayer call "$ADDR" sequence --args 1
+
+dim "order(2,0)  the schema waits on the spec -- THIS closes the loop"
+genlayer write "$ADDR" order --args 1 2 0
+genlayer call  "$ADDR" edges_of --args 1
+genlayer call  "$ADDR" overview --args 1
 
 # --- the provenance model, on chain ---------------------------------------
 dim "authorise() a delegate, then revoke it"
