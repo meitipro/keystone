@@ -185,5 +185,26 @@ block: pasting into the Studio editor rewrites both, and nothing runs either.
 
 ---
 
+## 6 · Done
+
+This has been run. The contract is live at
+[`0x3D9fb402946e4e34DfA9c9D85feFB980033AD33C`](https://explorer-studio.genlayer.com/address/0x3D9fb402946e4e34DfA9c9D85feFB980033AD33C),
+twenty-five transactions, every one finalized, and `cycles_refused` on the third
+plan is 1. The state read back off the chain is written up in
+[SUBMISSION.md](SUBMISSION.md#on-chain).
+
+**The demonstration took three plans to get right, and the reason is worth
+carrying forward.** A pair must have an unambiguous direction when read ALONE,
+and the loop must appear only when all three are held together. An earlier plan
+worded every step as "this cannot start until X is finished", which made the
+loop visible from inside a single pair; the model saw it, answered "circular
+dependency, both are mutually blocked", and returned neither. Steps that state
+only their own input avoid that: each pair reads as one step producing what the
+other consumes, and nothing in a pair reveals the cycle.
+
+That constraint is the thesis restated as a rule about the data.
+
+---
+
 One step stays manual: uploading `brand/social.png` under
 Settings → General → Social preview. GitHub has no API for it.

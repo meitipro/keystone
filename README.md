@@ -9,13 +9,69 @@ contract owns the graph and does the hard part with no model at all.
 
 - **Contract:** [`contracts/keystone.py`](contracts/keystone.py)
 - **Tests:** `pip install pytest && pytest tests/ -q` — nothing else to install
-- **Deployed:** `{address}` on studionet ([explorer](https://explorer-studio.genlayer.com/address/{address}))
+- **Deployed:** [`0x3D9fb402946e4e34DfA9c9D85feFB980033AD33C`](https://explorer-studio.genlayer.com/address/0x3D9fb402946e4e34DfA9c9D85feFB980033AD33C) on studionet
 - **Deploying it yourself:** [DEPLOY.md](DEPLOY.md) — the contract, the demo, and the check to run before submitting
 - **Verify a deployment:** `python scripts/verify_deployment.py 0x…` — diffs the
   on-chain source against this file
 - **Specification:** [CONTRACTS.md](CONTRACTS.md)
 - **Decisions:** [DECISIONS.md](DECISIONS.md)
 - **License:** MIT. Copy the agreement rule; that is what it is for.
+
+---
+
+## It is live, and the refusal is on chain
+
+Three plans on one contract. Two of them order cleanly; the third cannot be
+ordered at all, and the contract is the only thing in the system that can tell.
+
+**Plan 0 — a database cutover.** Four steps, three pairs asked.
+
+```
+freeze -> migrate -> repoint replicas       publish changelog: unrelated
+sequence: 0,3|1|2
+```
+
+Freeze and the changelog can both start now; the migration waits on the freeze;
+the replicas wait on the migration. The changelog pair came back `unrelated`,
+which is an answer rather than a failure: the contract does not invent a
+dependency to look decisive.
+
+**Plan 2 — a vendor selection that cannot be sequenced.** Three steps, each
+naming another's output as its own input.
+
+```
+[0] Assemble the vendor shortlist from the finished risk assessment.
+[1] Complete the risk assessment from the finished pricing sheet.
+[2] Fill in the pricing sheet from the finished vendor shortlist.
+```
+
+The first two pairs stored ordinary dependencies. The third was refused:
+
+```
+1 -> 0   after     live   the first step requires a finished risk assessment,
+                          which is the output produced by the second step
+2 -> 1   after     live   the pricing sheet must be filled in first before a
+                          risk assessment can be completed from it
+0 -> 2   CYCLE     dead   pricing sheet needs the finished vendor shortlist, so
+                          assembling the shortlist must be completed before
+                          pricing can start
+```
+
+Read the third reason again. **It contains no mention of a cycle.** The model
+was asked about two steps, answered the question it was asked, and was right:
+read alone, that pair really does run shortlist before pricing. Every one of
+the three answers is correct on its own, and the three together are not an
+ordering.
+
+Only the contract holds all three at once, so only the contract can see it. That
+is the whole argument for putting `would_cycle()` here rather than in a client.
+
+The refused edge is stored with `live: false` and constrains nothing:
+`sequence(2)` is still `2|1|0`, exactly as it was before the third pair was
+asked. `overview(2)` reads `cycles_refused: 1`.
+
+Twenty-five transactions, every one `FINALIZED`, no failed or abandoned
+transaction on the page.
 
 ---
 
