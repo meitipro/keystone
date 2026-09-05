@@ -4,8 +4,9 @@ Everything you need is on this page. Deploy through the Studio web interface at
 **studio.genlayer.com** — paste the contract, deploy, and call the methods
 through the form. Never put a private key into a file or hand one to a tool.
 
-Eighteen transactions. Two plans: one with a real ordering, one built to contain
-a circular dependency, because a plan cannot demonstrate both.
+Seventeen transactions. Two plans: one with a real ordering, one built to
+contain a circular dependency, because a single plan cannot demonstrate both --
+a plan with a real sequence has no honest answer that closes a loop.
 
 ---
 
@@ -81,25 +82,45 @@ it is still `ACCEPTED` or `COMMITTING` shows the state from before it.
 ## 3 · Plan 1 — a plan that cannot be ordered at all
 
 Plan 0 has a real ordering, so no honest answer closes a loop on it. The cycle
-needs a plan where each step waits on the next one's output: the ordinary
-organisational deadlock, where every pair is individually correct and the three
-together are not an ordering.
+needs a plan where each step consumes what the next one produces.
 
 ### Open it and add three steps
 
 | # | Method | Field | Value |
 |---|---|---|---|
-| 9 | `plan` | `title` | `Platform rebuild, the circular dependency` |
+| 9 | `plan` | `title` | `Vendor selection, Q4` |
 | 10 | `add` | `plan_id` | `1` |
-| | | `text` | `Write the API specification. This cannot start until the data model is finished.` |
+| | | `text` | `Assemble the vendor shortlist from the finished risk assessment.` |
 | 11 | `add` | `plan_id` | `1` |
-| | | `text` | `Build the data model. This cannot start until the database schema is finished.` |
+| | | `text` | `Complete the risk assessment from the finished pricing sheet.` |
 | 12 | `add` | `plan_id` | `1` |
-| | | `text` | `Design the database schema. This cannot start until the API specification is finished.` |
+| | | `text` | `Fill in the pricing sheet from the finished vendor shortlist.` |
 
-Each step names another step's deliverable, by the same name that step produces:
-spec waits on the data model, the data model waits on the schema, the schema
-waits on the spec.
+> ### The one rule that makes this work
+>
+> **Each step states only its own input. No pair may reveal the cycle.**
+>
+> Every step names one artifact it consumes, and that artifact is another step's
+> output. Read any two of them together and exactly one dependency is visible,
+> pointing one way, with the third artifact nowhere in sight. The loop exists
+> only across all three.
+>
+> That is not a stylistic preference, it is the thesis restated as a constraint
+> on the data. This contract exists because no single answer is wrong and the
+> set is impossible, so a demo where a single pair betrays the loop is testing
+> something else.
+>
+> An earlier attempt wrote every step as *"this cannot start until X is
+> finished"*. On the pair that should have closed the loop, the model answered
+> **"circular dependency: each step requires the other first, so neither can
+> actually start"** and returned `neither`. It refused one layer above the
+> refusal this contract is for, and no cycle was ever recorded. That plan is
+> still on the live contract as plan 1 of the original run, if you want to read
+> the difference.
+>
+> Avoid famous circular tropes too. API spec, data model and database schema are
+> a known interdependent trio and the model has a prior for it; procurement
+> artifacts do not.
 
 ### Build the chain
 
@@ -132,12 +153,13 @@ waits on the spec.
 |---|---|---|---|---|
 | 15 | `order` | `1` | `2` | `0` |
 
-The schema waits on the spec, so this wants to store 0 → 2. The graph already
-holds 2 → 1 → 0, so 0 → 2 would close it. Every one of those three edges was
-agreed by the network, no single answer is wrong, and together they are not an
-ordering. **The contract refuses.**
+The pricing sheet is filled in from the finished shortlist, so this wants to
+store 0 → 2. The graph already holds 2 → 1 → 0, so 0 → 2 would close it.
 
----
+Every one of those three answers is correct read on its own — the leader's
+stored reason for this one does not even mention a cycle, it just says the
+shortlist must be finished before the pricing sheet. Together they are not an
+ordering. **The contract refuses.**
 
 ## 4 · The provenance model, on chain
 
@@ -162,7 +184,7 @@ Read these. None costs a transaction.
 | `sequence` | `0` | `0,3\|1\|2` |
 | `overview` | `1` | `dependencies 2, unrelated 0, **cycles_refused 1**` |
 | `sequence` | `1` | `2\|1\|0` — **unchanged by step 15**, a refused edge constrains nothing |
-| `edges_of` | `1` | the third pair reads `outcome: cycle`, `live: false` |
+| `edges_of` | `1` | the third pair reads `outcome: cycle`, `live: false`, and its stored reason does not mention a cycle |
 | `delegation` | `0` | the registrar, and one revoked delegate |
 
 **`cycles_refused` on plan 1 must be `1`.** That is the single artifact this
